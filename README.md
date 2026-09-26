@@ -1,5 +1,7 @@
 # libreplan
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6a2d5c9b-b6bb-4d96-ac4c-e7ced21f995a" />
+
 This repo uses the official `libreplan/libreplan:1.6.1` image with
 PostgreSQL 16 and the official LibrePlan `install.sql` initializer.
 
