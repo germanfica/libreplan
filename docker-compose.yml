@@ -1,0 +1,59 @@
+name: libreplan
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 60s
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: libreplan
+      POSTGRES_USER: libreplan
+      POSTGRES_PASSWORD: ${LIBREPLAN_DBPASSWORD:?set LIBREPLAN_DBPASSWORD in .env before first start}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8 --data-checksums"
+      TZ: ${TZ:-UTC}
+    volumes:
+      - libreplan_pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 30
+    networks:
+      - backend
+    logging: *default-logging
+
+  libreplan:
+    image: libreplan/libreplan:1.6.1@sha256:f00c1035ae0f47810f74c339e349333aaf36b0104a12509b45d37de469ab9c81
+    platform: linux/amd64
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LIBREPLAN_DBHOST: db
+      LIBREPLAN_DBPASSWORD: ${LIBREPLAN_DBPASSWORD:?set LIBREPLAN_DBPASSWORD in .env before first start}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "${LIBREPLAN_BIND:-127.0.0.1}:${LIBREPLAN_PORT:-8080}:8080"
+    networks:
+      - backend
+    logging: *default-logging
+
+networks:
+  backend:
+    internal: false
+
+volumes:
+  libreplan_pgdata:
